@@ -7,7 +7,7 @@ EXTRA+= -gencode arch=compute_60,code=sm_60 -rdc=true -L /usr/lib/x86_64-linux-g
 EXTRA+=-DCUDAVEC -DHASHMAPDEBUG
 
 GTEST=-lgtest -lgtest_main -lpthread
-OBJ= gpuport.o speed_test.o vec_test.o mempool_main.o vec_of_vec_test.o gtest_vec.o gtest_hashmap.o gtest_map_rw.o map_operators.o map_add_remove.o
+OBJ= gpuport.o speed_test.o vec_test.o mempool_main.o vec_of_vec_test.o gtest_vec.o gtest_hashmap.o gtest_map_rw.o map_operators.o map_add_remove.o gtest_vec_mods
 
 all: ${OBJ}
 
@@ -23,7 +23,8 @@ allclean:
 	rm mempool &
 	rm map_rw &
 	rm map_operators_test &
-	rm map_add_remove
+	rm map_add_remove &
+	rm gtest_vec_mods
 
 
 gpuport.o: hash_gpu_vs_cpu/gpuport.cu
@@ -51,6 +52,9 @@ mempool_main.o: mempool_test/mempool_main.cu
 
 gtest_vec.o: gtest_vec/vec_test.cu
 	${CC} ${CXXFLAGS} ${OPT} ${EXTRA} ${GTEST} -o gtestvec gtest_vec/vec_test.cu
+
+gtest_vec_mods.o: gtest_vec_size_mods/main.cu 
+	${CC} ${CXXFLAGS} ${OPT} ${EXTRA} ${GTEST} -o gtest_vec_mods gtest_vec_size_mods/main.cu 
 
 gtest_hashmap.o: gtest_hasmap/unit.cu
 	${CC} ${CXXFLAGS} ${OPT} ${EXTRA} ${GTEST} -o gtesthashmap gtest_hasmap/unit.cu

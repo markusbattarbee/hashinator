@@ -155,10 +155,18 @@ namespace split{
          }
 
          __host__ SplitVector(std::initializer_list<T> init_list)
+            :_data(nullptr),_clones(new int(1)){
+            this->_allocate(init_list.size());
+            for (size_t i =0 ; i< size();i++){
+               _data[i]=init_list.begin()[i];
+            }
+         }
+
+         __host__ explicit  SplitVector(const std::vector<T> &other )
                :_data(nullptr),_clones(new int(1)){
-               this->_allocate(init_list.size());
-               for (size_t i =0 ; i< size();i++){
-                  _data[i]=init_list.begin()[i];
+               this->_allocate(other.size());
+               for (size_t i=0; i<size(); i++){
+                  _data[i]=other[i];
                }
          }
          
@@ -226,7 +234,7 @@ namespace split{
          }
 
          /*Internal range check for use in .at()*/
-         __host__ __device__ void rangeCheck(size_t index){
+         __host__ __device__ void rangeCheck(size_t index)const{
             assert(index<size() &&  "out of range");
          }
 
@@ -437,7 +445,7 @@ namespace split{
          }
 
 
-            //~Size modifiers
+         //~Size modifiers
 
          /*Host side operator += */
          __host__  SplitVector<T>& operator+=(const SplitVector<T>& rhs) {
