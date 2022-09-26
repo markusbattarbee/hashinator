@@ -141,22 +141,26 @@ namespace split{
           * */
 
          /*Constructors*/
-         __host__ explicit   SplitVector(){
+         __host__ 
+         explicit SplitVector(){
             this->_allocate(0); //seems counter-intuitive based on stl but it is not!
          }
 
-         __host__ explicit   SplitVector(size_t size){
+         __host__ 
+         explicit SplitVector(size_t size){
                this->_allocate(size);
          }
 
-         __host__ explicit  SplitVector(size_t size, const T &val){
+         __host__ 
+         explicit SplitVector(size_t size, const T &val){
                this->_allocate(size);
                for (size_t i=0; i<size; i++){
                   _data[i]=val;
                }
             }
 
-         __host__ SplitVector(const SplitVector &other){
+         __host__ 
+         SplitVector(const SplitVector &other){
                const size_t size_to_allocate = other.size();
                this->_allocate(size_to_allocate);
                for (size_t i=0; i<size_to_allocate; i++){
@@ -164,14 +168,16 @@ namespace split{
                }
             }
 
-         __host__ SplitVector(std::initializer_list<T> init_list){
+         __host__ 
+         SplitVector(std::initializer_list<T> init_list){
                this->_allocate(init_list.size());
                for (size_t i =0 ; i< size();i++){
                   _data[i]=init_list.begin()[i];
                }
             }
     
-         __host__ explicit  SplitVector(const std::vector<T> &other ){
+         __host__ 
+         explicit SplitVector(const std::vector<T> &other ){
                this->_allocate(other.size());
                for (size_t i=0; i<size(); i++){
                   _data[i]=other[i];
@@ -179,13 +185,15 @@ namespace split{
             }
          
          //Destructor
-         __host__ ~SplitVector(){
+         __host__ 
+         ~SplitVector(){
             _deallocate();
          }
 
          
          /*Custom Assignment operator*/
-         __host__  SplitVector& operator=(const SplitVector& other){
+         __host__  
+         SplitVector& operator=(const SplitVector& other){
             if (size() == other.size()){
                for (size_t i=0; i< size(); i++){
                   _data[i]=other._data[i];
@@ -214,7 +222,8 @@ namespace split{
          }
 
          /*Manually prefetch data on Device*/
-         __host__ void optimizeGPU(cudaStream_t stream = 0){
+         __host__ 
+         void optimizeGPU(cudaStream_t stream = 0){
             int device;
             cudaGetDevice(&device);
             CheckErrors("Prefetch GPU-Device-ID");
@@ -223,7 +232,8 @@ namespace split{
          }
 
          /*Manually prefetch data on Host*/
-         __host__ void optimizeCPU(cudaStream_t stream = 0){
+         __host__ 
+         void optimizeCPU(cudaStream_t stream = 0){
             cudaMemPrefetchAsync(_data ,capacity()*sizeof(T),cudaCpuDeviceId,stream);
             CheckErrors("Prefetch CPU");
          }
@@ -232,6 +242,7 @@ namespace split{
          * are pointing to the same container as 
          * before. 
          */
+         __host__
          void swap(SplitVector<T>& other) noexcept{
 
             if (*this==other){ //no need to do any work
@@ -248,34 +259,40 @@ namespace split{
 
          /************STL compatibility***************/
          /*Returns number of elements in this container*/
-         __host__ __device__ const size_t& size() const{
+         __host__ __device__ 
+         const size_t& size() const{
             return *_size;
          }
 
          /*Bracket accessor - no bounds check*/
-         __host__ __device__ T& operator [](size_t index){
+         __host__ __device__ 
+         T& operator [](size_t index){
                return _data[index];
          } 
                   
          /*Const Bracket accessor - no bounds check*/
-         __host__ __device__ const T& operator [](size_t index)const{
+         __host__ __device__ 
+         const T& operator [](size_t index)const{
                return _data[index];
          } 
 
          /*at accesor with bounds check*/
-         __host__ __device__ T& at(size_t index){
+         __host__ __device__ 
+         T& at(size_t index){
             _rangeCheck(index);
             return _data[index];
          }
          
          /*const at accesor with bounds check*/
-         __host__ __device__ const T& at(size_t index)const{
+         __host__ __device__ 
+         const T& at(size_t index)const{
             _rangeCheck(index);
             return _data[index];
          }
 
          /*Return a raw pointer to our data similar to stl vector*/
-         __host__ __device__ T* data(){
+         __host__ __device__ 
+         T* data(){
             return &(_data[0]);
          }
 
@@ -579,7 +596,8 @@ namespace split{
 
 
          /*Host side operator += */
-         __host__  SplitVector<T>& operator+=(const SplitVector<T>& rhs) {
+         __host__  
+         SplitVector<T>& operator+=(const SplitVector<T>& rhs) {
             assert(this->size()==rhs.size());
             for (size_t i=0; i< this->size(); i++){
                this->_data[i] = this->_data[i]+rhs[i];
@@ -589,7 +607,8 @@ namespace split{
 
 
          /*Host side operator /= */
-         __host__ SplitVector<T>& operator/=(const SplitVector<T>& rhs) {
+         __host__ 
+         SplitVector<T>& operator/=(const SplitVector<T>& rhs) {
             assert(this->size()==rhs.size());
             for (size_t i=0; i< this->size(); i++){
                this->_data[i] = this->_data[i]/rhs[i];
@@ -598,7 +617,8 @@ namespace split{
          }
 
          /*Host side operator -= */
-         __host__ SplitVector<T>& operator-=(const SplitVector<T>& rhs) {
+         __host__ 
+         SplitVector<T>& operator-=(const SplitVector<T>& rhs) {
             assert(this->size()==rhs.size());
             for (size_t i=0; i< this->size(); i++){
                this->_data[i] = this->_data[i]-rhs[i];
@@ -607,7 +627,8 @@ namespace split{
          }
 
          /*Host side operator *= */
-         __host__ SplitVector<T>& operator*=(const SplitVector<T>& rhs) {
+         __host__ 
+         SplitVector<T>& operator*=(const SplitVector<T>& rhs) {
             assert(this->size()==rhs.size());
             for (size_t i=0; i< this->size(); i++){
                this->_data[i] = this->_data[i]*rhs[i];
