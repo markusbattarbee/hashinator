@@ -263,6 +263,9 @@ namespace Hashinator{
       __host__
       size_t size() const { return fill; }
 
+      __device__
+      size_t device_size() const { return *d_fill; }
+
       __host__ __device__
       size_t bucket_count() const {
          return buckets.size();
@@ -271,7 +274,7 @@ namespace Hashinator{
       __host__
       float load_factor() const {return (float)size()/bucket_count();}
 
-      __host__
+      __host__ __device__
       size_t count(const KEY_TYPE& key) const {
          if (find(key) != end()) {
             return 1;
