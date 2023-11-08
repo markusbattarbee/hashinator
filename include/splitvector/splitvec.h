@@ -497,8 +497,9 @@ public:
     * @brief  Returns the residency information of this
     *         Splitvector
     */
+   [[nodiscard]]
    HOSTDEVICE
-   [[nodiscard]] inline Residency getResidency()const noexcept{
+   inline Residency getResidency()const noexcept{
       return _location;
    }
 
