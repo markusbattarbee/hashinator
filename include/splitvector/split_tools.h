@@ -708,6 +708,20 @@ estimateMemoryForCompaction(const split::SplitVector<T, split::split_unified_all
    return 8 * nBlocks * sizeof(uint32_t);
 }
 
+template <int BLOCKSIZE = 1024>
+[[nodiscard]] size_t
+estimateMemoryForCompaction(const size_t inputSize) noexcept {
+   // Figure out Blocks to use
+   size_t _s = std::ceil((float(inputSize)) / (float)BLOCKSIZE);
+   size_t nBlocks = nextPow2(_s);
+   if (nBlocks == 0) {
+      nBlocks += 1;
+   }
+
+   // Allocate with Mempool
+   return 8 * nBlocks * sizeof(uint32_t);
+}
+
 /**
  * @brief Same as copy_if but only for Hashinator keys
  */

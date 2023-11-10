@@ -450,16 +450,34 @@ public:
    }
 #endif
 
+
+#ifdef HASHINATOR_CPU_ONLY_MODE
    // Try to grow our buckets until we achieve a targetLF load factor
    void resize_to_lf(float targetLF = 0.5) {
       while (load_factor() > targetLF) {
          rehash(_mapInfo->sizePower + 1);
       }
    }
-
-#ifdef HASHINATOR_CPU_ONLY_MODE
    void resize(int newSizePower) { rehash(newSizePower); }
 #else
+   // Try to grow our buckets until we achieve a targetLF load factor
+   void resize_to_lf(float targetLF = 0.5, targets t = targets::host, split_gpuStream_t s = 0) {
+      while (load_factor() > targetLF) {
+         switch (t) {
+            case targets::host:
+               rehash(_mapInfo->sizePower + 1);
+               break;
+            case targets::device:
+               device_rehash(_mapInfo->sizePower + 1, s);
+               break;
+            default:
+               std::cerr << "Defaulting to host rehashing" << std::endl;
+               resize(_mapInfo->sizePower + 1, targets::host);
+               break;
+         }
+      }
+      return;
+   }
    void resize(int newSizePower, targets t = targets::host, split_gpuStream_t s = 0) {
       switch (t) {
       case targets::host:
@@ -1268,6 +1286,7 @@ public:
       return device_map;
    }
 
+   /*Manually prefetch data to Device*/
    void optimizeGPU(split_gpuStream_t stream = 0) noexcept {
       int device;
       SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
@@ -1275,9 +1294,37 @@ public:
       buckets.optimizeGPU(stream);
    }
 
-   /*Manually prefetch data on Host*/
+   /*Manually prefetch data to Host*/
    void optimizeCPU(split_gpuStream_t stream = 0) noexcept {
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
+      buckets.optimizeCPU(stream);
+   }
+
+   /*Manually prefetch metadata to Device*/
+   void optimizeMetadataGPU(split_gpuStream_t stream = 0) noexcept {
+      int device;
+      SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
+      MapInfo* __mapInfo = _mapInfo;
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), device, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), device, stream));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+   }
+
+   /*Manually prefetch metadata to Host*/
+   void optimizeMetadataCPU(split_gpuStream_t stream = 0) noexcept {
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+   }
+
+   /*Manually prefetch only actual data to Device*/
+   void optimizeJustDataGPU(split_gpuStream_t stream = 0) noexcept {
+      buckets.optimizeGPU(stream);
+   }
+
+   /*Manually prefetch only actual data to Host*/
+   void optimizeJustDataCPU(split_gpuStream_t stream = 0) noexcept {
       buckets.optimizeCPU(stream);
    }
 
