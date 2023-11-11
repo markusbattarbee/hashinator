@@ -1316,7 +1316,8 @@ public:
    void optimizeMetadataCPU(split_gpuStream_t stream = 0) noexcept {
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
+      MapInfo* __mapInfo = _mapInfo;
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
       // buckets metadata is included in this
    }
 
@@ -1326,9 +1327,13 @@ public:
       int device;
       SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
-      MapInfo* __mapInfo = _mapInfo;
-      split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>* _buckets = &buckets;
-      _buckets->optimizeGPU(stream);
+      const MapInfo* __mapInfo = _mapInfo;
+      split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>* __buckets = &buckets;
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__buckets, sizeof(split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+      __buckets->optimizeGPU(stream);
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__buckets, sizeof(split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), device, stream));
    }
@@ -1337,7 +1342,8 @@ public:
    void optimizeUMCPU(split_gpuStream_t stream = 0) noexcept {
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
+      MapInfo* __mapInfo = _mapInfo;
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
       buckets.optimizeCPU(stream);
    }
 

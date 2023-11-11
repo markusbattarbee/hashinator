@@ -454,12 +454,13 @@ public:
       // This is done because _capacity would page-fault otherwise as pointed by Markus
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_capacity, sizeof(size_t), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
-      if (*_capacity==0){
+      const size_t currentCapacity = *_capacity;
+      if (currentCapacity==0){
          return;
       }
 
       // Now prefetch everything to device
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_data, capacity() * sizeof(T), device, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_data, currentCapacity * sizeof(T), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_size, sizeof(size_t), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_capacity, sizeof(size_t), device, stream));
    }
@@ -474,10 +475,11 @@ public:
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_capacity, sizeof(size_t), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_size, sizeof(size_t), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
-      if (*_capacity==0){
+      const size_t currentCapacity = *_capacity;
+      if (currentCapacity==0){
          return;
       }
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_data, capacity() * sizeof(T), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_data, currentCapacity * sizeof(T), split_gpuCpuDeviceId, stream));
    }
 
    /**
@@ -502,8 +504,10 @@ public:
    HOSTONLY void optimizeMetadataCPU(split_gpuStream_t stream = 0) noexcept {
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_capacity, sizeof(size_t), split_gpuCpuDeviceId, stream));
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_size, sizeof(size_t), split_gpuCpuDeviceId, stream));
+      const size_t* __size = _size;
+      const size_t* __capacity = _capacity;
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__capacity, sizeof(size_t), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__size, sizeof(size_t), split_gpuCpuDeviceId, stream));
    }
 
    /**
@@ -513,13 +517,14 @@ public:
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       _location = Residency::device;
-      size_t* __size = _size;
-      size_t* __capacity = _capacity;
-      T* __data = _data;
+      const size_t* __size = _size;
+      const size_t* __capacity = _capacity;
+      const T* __data = _data;
+      const size_t currentCapacity = *_capacity;
       int device;
       SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
-      if (*_capacity!=0){
-         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__data, *_capacity * sizeof(T), device, stream));
+      if (currentCapacity!=0){
+         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__data, currentCapacity * sizeof(T), device, stream));
       }
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__size, sizeof(size_t), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__capacity, sizeof(size_t), device, stream));
@@ -533,10 +538,14 @@ public:
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       _location = Residency::host;
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_capacity, sizeof(size_t), split_gpuCpuDeviceId, stream));
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_size, sizeof(size_t), split_gpuCpuDeviceId, stream));
-      if (*_capacity!=0){
-         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_data, *_capacity * sizeof(T), split_gpuCpuDeviceId, stream));
+      const size_t* __size = _size;
+      const size_t* __capacity = _capacity;
+      const T* __data = _data;
+      const size_t currentCapacity = *_capacity;
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__capacity, sizeof(size_t), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__size, sizeof(size_t), split_gpuCpuDeviceId, stream));
+      if (currentCapacity!=0){
+         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__data, currentCapacity * sizeof(T), split_gpuCpuDeviceId, stream));
       }
    }
 
