@@ -519,7 +519,7 @@ public:
       int device;
       SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
       if (*_capacity!=0){
-         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__data, sizeof(size_t), device, stream));
+         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__data, *_capacity * sizeof(T), device, stream));
       }
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__size, sizeof(size_t), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__capacity, sizeof(size_t), device, stream));
@@ -536,7 +536,7 @@ public:
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_capacity, sizeof(size_t), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_size, sizeof(size_t), split_gpuCpuDeviceId, stream));
       if (*_capacity!=0){
-         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_data, capacity() * sizeof(T), split_gpuCpuDeviceId, stream));         
+         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_data, *_capacity * sizeof(T), split_gpuCpuDeviceId, stream));
       }
    }
 
