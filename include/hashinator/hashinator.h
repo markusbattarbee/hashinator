@@ -1302,12 +1302,14 @@ public:
 
    /*Manually prefetch metadata to Device*/
    void optimizeMetadataGPU(split_gpuStream_t stream = 0) noexcept {
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
       int device;
       SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       MapInfo* __mapInfo = _mapInfo;
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), device, stream));
-      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+      // buckets metadata is included in this
    }
 
    /*Manually prefetch metadata to Host*/
@@ -1315,16 +1317,27 @@ public:
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
-      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+      // buckets metadata is included in this
    }
 
    /*Manually prefetch only actual data to Device*/
-   void optimizeJustDataGPU(split_gpuStream_t stream = 0) noexcept {
-      buckets.optimizeGPU(stream);
+   void optimizeUMGPU(split_gpuStream_t stream = 0) noexcept {
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
+      int device;
+      SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+      MapInfo* __mapInfo = _mapInfo;
+      split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>* _buckets = &buckets;
+      _buckets->optimizeGPU(stream);
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), device, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), device, stream));
    }
 
    /*Manually prefetch only actual data to Host*/
-   void optimizeJustDataCPU(split_gpuStream_t stream = 0) noexcept {
+   void optimizeUMCPU(split_gpuStream_t stream = 0) noexcept {
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
       buckets.optimizeCPU(stream);
    }
 

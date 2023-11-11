@@ -484,8 +484,15 @@ public:
     * @brief Manually prefetches metadata to the GPU.
     */
    HOSTONLY void optimizeMetadataGPU(split_gpuStream_t stream = 0) noexcept {
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
       int device;
       SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+      size_t* __size = _size;
+      size_t* __capacity = _capacity;
+      //T* __data = _data;
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__size, sizeof(size_t), device, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__capacity, sizeof(size_t), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), device, stream));
    }
 
@@ -494,37 +501,43 @@ public:
     */
    HOSTONLY void optimizeMetadataCPU(split_gpuStream_t stream = 0) noexcept {
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_capacity, sizeof(size_t), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_size, sizeof(size_t), split_gpuCpuDeviceId, stream));
    }
 
    /**
-    * @brief Manually prefetches data to the GPU.
+    * @brief Manually prefetches data + metadata to the GPU.
     */
-   HOSTONLY void optimizeJustDataGPU(split_gpuStream_t stream = 0) noexcept {
-      if (*_capacity==0){
-         return;
-      }
+   HOSTONLY void optimizeUMGPU(split_gpuStream_t stream = 0) noexcept {
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       _location = Residency::device;
-      int device;
-      SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
       size_t* __size = _size;
       size_t* __capacity = _capacity;
       T* __data = _data;
+      int device;
+      SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
+      if (*_capacity!=0){
+         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__data, sizeof(size_t), device, stream));
+      }
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__size, sizeof(size_t), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__capacity, sizeof(size_t), device, stream));
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__data, sizeof(size_t), device, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), device, stream));
    }
 
    /**
     * @brief Manually prefetches data to the CPU.
     */
-   HOSTONLY void optimizeJustDataCPU(split_gpuStream_t stream = 0) noexcept {
-      if (*_capacity==0){
-         return;
-      }
+   HOSTONLY void optimizeUMCPU(split_gpuStream_t stream = 0) noexcept {
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       _location = Residency::host;
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_data, capacity() * sizeof(T), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_capacity, sizeof(size_t), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_size, sizeof(size_t), split_gpuCpuDeviceId, stream));
+      if (*_capacity!=0){
+         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(_data, capacity() * sizeof(T), split_gpuCpuDeviceId, stream));         
+      }
    }
 
    /**
