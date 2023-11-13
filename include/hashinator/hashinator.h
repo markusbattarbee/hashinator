@@ -39,6 +39,7 @@
 #include "../splitvector/split_tools.h"
 #include "hashers.h"
 #endif
+#include <phiprof.hpp>
 
 namespace Hashinator {
 
@@ -1172,12 +1173,23 @@ public:
          return;
       }
       // If we do have overflown elements we put them back in the buckets
-      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
-      DeviceHasher::reset(overflownElements, buckets.data(), _mapInfo->sizePower, _mapInfo->currentMaxBucketOverflow,
-                          nOverflownElements, s);
+      const int __sizePower = _mapInfo->sizePower;
+      size_t* __fill = &_mapInfo->fill;
+      const size_t _currentMaxBucketOverflow = _mapInfo->currentMaxBucketOverflow;
+      size_t* __currentMaxBucketOverflow = &_mapInfo->currentMaxBucketOverflow;
+      status* __err = &_mapInfo->err;
+      hash_pair<KEY_TYPE, VAL_TYPE>* _buckets = buckets.data();
       _mapInfo->fill -= nOverflownElements;
-      DeviceHasher::insert(overflownElements, buckets.data(), _mapInfo->sizePower, _mapInfo->currentMaxBucketOverflow,
-                           &_mapInfo->currentMaxBucketOverflow, &_mapInfo->fill, nOverflownElements, &_mapInfo->err, s);
+      optimizeMetadataGPU(s);
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
+      // DeviceHasher::reset(overflownElements, buckets.data(), _mapInfo->sizePower, _mapInfo->currentMaxBucketOverflow,
+      //                     nOverflownElements, s);
+      DeviceHasher::reset(overflownElements, _buckets, __sizePower, _currentMaxBucketOverflow,
+                          nOverflownElements, s);
+      // DeviceHasher::insert(overflownElements, buckets.data(), _mapInfo->sizePower, _mapInfo->currentMaxBucketOverflow,
+      //                      &_mapInfo->currentMaxBucketOverflow, &_mapInfo->fill, nOverflownElements, &_mapInfo->err, s);
+      DeviceHasher::insert(overflownElements, _buckets, __sizePower, _currentMaxBucketOverflow,
+                           __currentMaxBucketOverflow, __fill, nOverflownElements, __err, s);
 
       SPLIT_CHECK_ERR(split_gpuFreeAsync(overflownElements, s));
       return;
@@ -1199,9 +1211,19 @@ public:
       if (neededPowerSize > _mapInfo->sizePower) {
          resize(neededPowerSize, targets::device, s);
       }
-      _mapInfo->currentMaxBucketOverflow = _mapInfo->currentMaxBucketOverflow;
-      DeviceHasher::insert(keys, vals, buckets.data(), _mapInfo->sizePower, _mapInfo->currentMaxBucketOverflow,
-                           &_mapInfo->currentMaxBucketOverflow, &_mapInfo->fill, len, &_mapInfo->err, s);
+      const int __sizePower = _mapInfo->sizePower;
+      size_t* __fill = &_mapInfo->fill;
+      const size_t _currentMaxBucketOverflow = _mapInfo->currentMaxBucketOverflow;
+      size_t* __currentMaxBucketOverflow = &_mapInfo->currentMaxBucketOverflow;
+      status* __err = &_mapInfo->err;
+      hash_pair<KEY_TYPE, VAL_TYPE>* _buckets = buckets.data();
+      optimizeMetadataGPU(s);
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
+      DeviceHasher::insert(keys, vals, _buckets, __sizePower, _currentMaxBucketOverflow,
+                           __currentMaxBucketOverflow, __fill, len, __err, s);
+      
+      // DeviceHasher::insert(keys, vals, buckets.data(), _mapInfo->sizePower, _mapInfo->currentMaxBucketOverflow,
+      //                      &_mapInfo->currentMaxBucketOverflow, &_mapInfo->fill, len, &_mapInfo->err, s);
       return;
    }
 
@@ -1326,7 +1348,7 @@ public:
    }
 
    /*Manually prefetch only actual data to Device*/
-   void optimizeUMGPU(split_gpuStream_t stream = 0) noexcept {
+   void optimizeUMGPU(split_gpuStream_t stream = 0, bool leaveMetadataOnCPU = false) noexcept {
       void* thishere = this;
       const size_t sizehere = sizeof(Hashmap);
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(thishere, sizehere, split_gpuCpuDeviceId, stream));
@@ -1338,10 +1360,14 @@ public:
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__buckets, sizeof(split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       __buckets->optimizeGPU(stream);
+      if (leaveMetadataOnCPU) {
+         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
+         return;
+      }
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__buckets, sizeof(split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>), device, stream));
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(thishere, sizehere, device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), device, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(thishere, sizehere, device, stream));
    }
 
    /*Manually prefetch only actual data to Host*/

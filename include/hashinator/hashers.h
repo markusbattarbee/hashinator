@@ -47,14 +47,20 @@ public:
                       size_t maxoverflow, size_t* d_overflow, size_t* d_fill, size_t len, status* err,
                       split_gpuStream_t s = 0) {
       size_t blocks, blockSize;
-      *err = status::success;
+      //*err = status::success;
+      SPLIT_CHECK_ERR(split_gpuMemsetAsync(err,status::success, sizeof(status),s));
       launchParams(len, blocks, blockSize);
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
       Hashinator::Hashers::insert_kernel<KEY_TYPE, VAL_TYPE, EMPTYBUCKET, HashFunction, defaults::WARPSIZE,
                                          elementsPerWarp>
           <<<blocks, blockSize, 0, s>>>(keys, vals, buckets, sizePower, maxoverflow, d_overflow, d_fill, len, err);
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
 #ifndef NDEBUG
-      if (*err == status::fail) {
+      status retStatus;
+      SPLIT_CHECK_ERR(split_gpuMemcpyAsync(&retStatus,err, sizeof(status), split_gpuMemcpyDeviceToHost, s));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
+      if (retStatus == status::fail) {
+      // if (*err == status::fail) {
          std::cerr << "***** Hashinator Runtime Warning ********" << std::endl;
          std::cerr << "Warning: Hashmap completely overflown in Device Insert.\nNot all ellements were "
                       "inserted!\nConsider resizing before calling insert"
@@ -68,14 +74,19 @@ public:
    static void insertIndex(KEY_TYPE* keys, hash_pair<KEY_TYPE, VAL_TYPE>* buckets, int sizePower, size_t maxoverflow,
                            size_t* d_overflow, size_t* d_fill, size_t len, status* err, split_gpuStream_t s = 0) {
       size_t blocks, blockSize;
-      *err = status::success;
+      //*err = status::success;
+      SPLIT_CHECK_ERR(split_gpuMemsetAsync(err,status::success, sizeof(status),s));
       launchParams(len, blocks, blockSize);
       Hashinator::Hashers::insert_index_kernel<KEY_TYPE, VAL_TYPE, EMPTYBUCKET, HashFunction, defaults::WARPSIZE,
                                                elementsPerWarp>
           <<<blocks, blockSize, 0, s>>>(keys, buckets, sizePower, maxoverflow, d_overflow, d_fill, len, err);
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
 #ifndef NDEBUG
-      if (*err == status::fail) {
+      status retStatus;
+      SPLIT_CHECK_ERR(split_gpuMemcpyAsync(&retStatus,err, sizeof(status), split_gpuMemcpyDeviceToHost, s));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
+      if (retStatus == status::fail) {
+      // if (*err == status::fail) {
          std::cerr << "***** Hashinator Runtime Warning ********" << std::endl;
          std::cerr << "Warning: Hashmap completely overflown in Device InsertIndex.\nNot all elements were "
                       "inserted!\nConsider resizing before calling insert"
@@ -91,14 +102,19 @@ public:
                       size_t maxoverflow, size_t* d_overflow, size_t* d_fill, size_t len, status* err,
                       split_gpuStream_t s = 0) {
       size_t blocks, blockSize;
-      *err = status::success;
+      //*err = status::success;
+      SPLIT_CHECK_ERR(split_gpuMemsetAsync(err,status::success, sizeof(status),s));
       launchParams(len, blocks, blockSize);
       Hashinator::Hashers::insert_kernel<KEY_TYPE, VAL_TYPE, EMPTYBUCKET, HashFunction, defaults::WARPSIZE,
                                          elementsPerWarp>
           <<<blocks, blockSize, 0, s>>>(src, buckets, sizePower, maxoverflow, d_overflow, d_fill, len, err);
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
 #ifndef NDEBUG
-      if (*err == status::fail) {
+      status retStatus;
+      SPLIT_CHECK_ERR(split_gpuMemcpyAsync(&retStatus,err, sizeof(status), split_gpuMemcpyDeviceToHost, s));
+      SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
+      if (retStatus == status::fail) {
+      // if (*err == status::fail) {
          std::cerr << "***** Hashinator Runtime Warning ********" << std::endl;
          std::cerr << "Warning: Hashmap completely overflown in Device Insert.\nNot all ellements were "
                       "inserted!\nConsider resizing before calling insert"
