@@ -693,7 +693,7 @@ public:
     *
     * @param requested_space The size of the requested space.
     */
-   HOSTONLY void reallocate(size_t requested_space) {
+   HOSTONLY void reallocate(size_t requested_space, split_gpuStream_t stream = 0) {
       if (requested_space == 0) {
          if (_data != nullptr) {
             _deallocate_and_destroy(capacity(), _data);
@@ -710,19 +710,31 @@ public:
          this->_deallocate();
          throw std::bad_alloc();
       }
-
       // Copy over
-      for (size_t i = 0; i < size(); i++) {
-         _new_data[i] = _data[i];
-      }
-
-      // Deallocate old space
-      _deallocate_and_destroy(capacity(), _data);
-
+      const size_t __size = *_size;
+      const size_t __old_capacity = *_capacity;
+      T* __new_data = _new_data;
+      T* __data = _data;
       // Swap pointers & update capacity
       // Size remains the same ofc
       _data = _new_data;
       *_capacity = requested_space;
+      if (__size>0) {
+         int device;
+         SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
+         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__data, __size * sizeof(T), device, stream));//
+         SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__new_data, requested_space * sizeof(T), device, stream));
+         SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+         SPLIT_CHECK_ERR(split_gpuMemcpy(__new_data, __data, __size * sizeof(T), split_gpuMemcpyDeviceToDevice));
+         SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
+      }
+      // for (size_t i = 0; i < size(); i++) {
+      //    _new_data[i] = _data[i];
+      // }
+
+      // Deallocate old space
+      _deallocate_and_destroy(__old_capacity, __data);
+
       return;
    }
 
@@ -737,8 +749,8 @@ public:
     * will be invalidated after a call.
     */
    HOSTONLY
-   void reserve(size_t requested_space, bool eco = false) {
-      size_t current_space = *_capacity;
+   void reserve(size_t requested_space, bool eco = false, split_gpuStream_t stream = 0) {
+      const size_t current_space = *_capacity;
       // Vector was default initialized
       if (_data == nullptr) {
          _deallocate();
@@ -747,9 +759,14 @@ public:
          return;
       }
       // Nope.
+      const size_t currentSize = size();
       if (requested_space <= current_space) {
-         for (size_t i = size(); i < requested_space; ++i) {
-            _allocator.construct(&_data[i], T());
+         if (std::is_trivially_constructible<T>::value && _location == Residency::device) {
+            SPLIT_CHECK_ERR( split_gpuMemsetAsync(&_data[currentSize],0,(requested_space-currentSize)*sizeof(T), stream) );
+         } else {
+            for (size_t i = currentSize; i < requested_space; ++i) {
+               _allocator.construct(&_data[i], T());
+            }
          }
          return;
       }
@@ -758,7 +775,7 @@ public:
       if (!eco) {
          requested_space *= _alloc_multiplier;
       }
-      reallocate(requested_space);
+      reallocate(requested_space,stream);
       return;
    }
 
@@ -774,13 +791,13 @@ public:
     * will be invalid from now on.
     */
    HOSTONLY
-   void resize(size_t newSize, bool eco = false) {
+   void resize(size_t newSize, bool eco = false, split_gpuStream_t stream = 0) {
       // Let's reserve some space and change our size
       if (newSize <= size()) {
          *_size = newSize;
          return;
       }
-      reserve(newSize, eco);
+      reserve(newSize, eco, stream);
       *_size = newSize;
    }
 
@@ -806,13 +823,13 @@ public:
     * @brief Increase the capacity of the SplitVector by 1.
     */
    HOSTONLY
-   void grow() { reserve(capacity() + 1); }
+   void grow(split_gpuStream_t stream = 0) { reserve(capacity() + 1, false, stream); }
 
    /**
     * @brief Reduce the capacity of the SplitVector to match its size.
     */
    HOSTONLY
-   void shrink_to_fit() {
+   void shrink_to_fit(split_gpuStream_t stream = 0) {
       size_t curr_cap = *_capacity;
       size_t curr_size = *_size;
 
@@ -820,7 +837,7 @@ public:
          return;
       }
 
-      reallocate(curr_size);
+      reallocate(curr_size,stream);
       return;
    }
 
