@@ -1302,19 +1302,23 @@ public:
 
    /*Manually prefetch metadata to Device*/
    void optimizeMetadataGPU(split_gpuStream_t stream = 0) noexcept {
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
+      void* thishere = this;
+      const size_t sizehere = sizeof(Hashmap);
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(thishere, sizehere, split_gpuCpuDeviceId, stream));
       int device;
       SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       MapInfo* __mapInfo = _mapInfo;
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), device, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(thishere, sizehere, device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), device, stream));
       // buckets metadata is included in this
    }
 
    /*Manually prefetch metadata to Host*/
    void optimizeMetadataCPU(split_gpuStream_t stream = 0) noexcept {
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
+      void* thishere = this;
+      const size_t sizehere = sizeof(Hashmap);
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(thishere, sizehere, split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       MapInfo* __mapInfo = _mapInfo;
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
@@ -1323,7 +1327,9 @@ public:
 
    /*Manually prefetch only actual data to Device*/
    void optimizeUMGPU(split_gpuStream_t stream = 0) noexcept {
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
+      void* thishere = this;
+      const size_t sizehere = sizeof(Hashmap);
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(thishere, sizehere, split_gpuCpuDeviceId, stream));
       int device;
       SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
@@ -1334,13 +1340,15 @@ public:
       __buckets->optimizeGPU(stream);
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__buckets, sizeof(split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>), device, stream));
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), device, stream));
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(thishere, sizehere, device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), device, stream));
    }
 
    /*Manually prefetch only actual data to Host*/
    void optimizeUMCPU(split_gpuStream_t stream = 0) noexcept {
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(this, sizeof(this), split_gpuCpuDeviceId, stream));
+      void* thishere = this;
+      const size_t sizehere = sizeof(Hashmap);
+      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(thishere, sizehere, split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
       MapInfo* __mapInfo = _mapInfo;
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
