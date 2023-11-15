@@ -359,6 +359,33 @@ public:
       _location = Residency::host;
       return *this;
    }
+
+   /** Copy assign but using a provided stream */
+   HOSTONLY void overwrite(const SplitVector<T, Allocator>& other, split_gpuStream_t stream = 0) {
+      if (this == &other) {
+         return;
+      }
+      // Match other's size prior to copying
+      resize(other.size(), true, stream);
+      auto copySafe = [&]() -> void {
+         for (size_t i = 0; i < size(); i++) {
+            _data[i] = other._data[i];
+         }
+      };
+
+      if constexpr (std::is_trivially_copyable<T>::value) {
+         if (other._location == Residency::device) {
+            _location = Residency::device;
+            optimizeGPU(stream);
+            SPLIT_CHECK_ERR(split_gpuMemcpyAsync(_data, other._data, size() * sizeof(T), split_gpuMemcpyDeviceToDevice,stream));
+            return;
+         }
+      }
+      copySafe();
+      _location = Residency::host;
+      return;
+   }
+
 #endif
 
    /**

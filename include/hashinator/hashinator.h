@@ -151,7 +151,15 @@ public:
       buckets = other.buckets;
       return *this;
    }
-
+   /** Copy assign but using a provided stream */
+   void overwrite(const Hashmap<KEY_TYPE,VAL_TYPE>& other, split_gpuStream_t stream = 0) {
+      if (this == &other) {
+         return;
+      }
+      SPLIT_CHECK_ERR(split_gpuMemcpyAsync(_mapInfo,other._mapInfo, sizeof(MapInfo), split_gpuMemcpyDeviceToDevice, stream));
+      buckets.overwrite(other.buckets);
+      return;
+   }
    Hashmap& operator=(Hashmap<KEY_TYPE,VAL_TYPE>&& other) {
       if (this == &other) {
          return *this;
