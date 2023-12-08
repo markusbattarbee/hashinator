@@ -889,7 +889,7 @@ size_t copy_if(T* input, T* output, size_t size, Rule rule, void* stack, size_t 
    }
    assert(stack && "Invalid stack!");
    Cuda_mempool mPool(stack, max_size);
-   auto len = copy_if_raw2(input, output, size, rule, nBlocks, mPool, s);
+   auto len = copy_if_raw(input, output, size, rule, nBlocks, mPool, s);
    return len;
 }
 
