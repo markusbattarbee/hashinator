@@ -1367,13 +1367,14 @@ public:
       split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>* __buckets = &buckets;
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__buckets, sizeof(split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>), split_gpuCpuDeviceId, stream));
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
-      __buckets->optimizeGPU(stream);
       if (leaveMetadataOnCPU) {
+         __buckets->optimizeUMGPU(stream, true);
          SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), split_gpuCpuDeviceId, stream));
          return;
+      } else {
+         __buckets->optimizeUMGPU(stream, false);
       }
       SPLIT_CHECK_ERR(split_gpuStreamSynchronize(stream));
-      SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__buckets, sizeof(split::SplitVector<hash_pair<KEY_TYPE, VAL_TYPE>>), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(__mapInfo, sizeof(MapInfo), device, stream));
       SPLIT_CHECK_ERR(split_gpuMemPrefetchAsync(thishere, sizehere, device, stream));
    }
