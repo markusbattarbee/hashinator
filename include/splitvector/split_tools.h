@@ -623,7 +623,7 @@ uint32_t copy_if_raw(split::SplitVector<T, split::split_unified_allocator<T>>& i
    uint32_t* d_offsets;
    d_counts = (uint32_t*)mPool.allocate(nBlocks * sizeof(uint32_t));
    SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
-   SPLIT_CHECK_ERR(split_gpuMemsetAsync(d_counts, 0, nBlocks * sizeof(uint32_t), s));
+   SPLIT_CHECK_ERR(split_gpuMemsetAsync(d_counts, 0, nBlocks * sizeof(uint32_t),s));
 
    // Phase 1 -- Calculate per warp workload
    split::tools::scan_reduce_raw<<<nBlocks, BLOCKSIZE, 0, s>>>(input.data(), d_counts, rule, input.size());
