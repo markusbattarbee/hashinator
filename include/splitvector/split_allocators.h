@@ -33,7 +33,7 @@ namespace split {
 #define SPLIT_CHECK_ERR(err) (split::cuda_error(err, __FILE__, __LINE__))
 static void cuda_error(cudaError_t err, const char* file, int line) {
    if (err != cudaSuccess) {
-      printf("\n\n%s in %s at line %d\n", cudaGetErrorString(err), file, line);
+      std::cerr<<"\n\n"<<cudaGetErrorString(err)<<" in "<<file<<" at line "<<line<<"\n";
       abort();
    }
 }
@@ -109,7 +109,11 @@ public:
       return ret;
    }
 
-   void deallocate(pointer p, size_type) { SPLIT_CHECK_ERR(split_gpuFree(p)); }
+   void deallocate(pointer p, size_type n) {
+      if (n != 0 && p != 0) {
+         SPLIT_CHECK_ERR(split_gpuFree(p));
+      }
+   }
 
    static void deallocate(void* p, size_type) { SPLIT_CHECK_ERR(split_gpuFree(p)); }
 
