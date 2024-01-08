@@ -151,6 +151,7 @@ public:
       buckets = other.buckets;
       return *this;
    }
+
    /** Copy assign but using a provided stream */
    void overwrite(const Hashmap<KEY_TYPE,VAL_TYPE>& other, split_gpuStream_t stream = 0) {
       if (this == &other) {
@@ -160,6 +161,7 @@ public:
       buckets.overwrite(other.buckets);
       return;
    }
+
    Hashmap& operator=(Hashmap<KEY_TYPE,VAL_TYPE>&& other) {
       if (this == &other) {
          return *this;
@@ -459,15 +461,13 @@ public:
    }
 #endif
 
-
 #ifdef HASHINATOR_CPU_ONLY_MODE
-   // Try to grow our buckets until we achieve a targetLF load factor
+// Try to grow our buckets until we achieve a targetLF load factor
    void resize_to_lf(float targetLF = 0.5) {
       while (load_factor() > targetLF) {
          rehash(_mapInfo->sizePower + 1);
       }
    }
-   void resize(int newSizePower) { rehash(newSizePower); }
 #else
    // Try to grow our buckets until we achieve a targetLF load factor
    void resize_to_lf(float targetLF = 0.5, targets t = targets::host, split_gpuStream_t s = 0) {
@@ -487,6 +487,11 @@ public:
       }
       return;
    }
+#endif
+
+#ifdef HASHINATOR_CPU_ONLY_MODE
+   void resize(int newSizePower) { rehash(newSizePower); }
+#else
    void resize(int newSizePower, targets t = targets::host, split_gpuStream_t s = 0) {
       switch (t) {
       case targets::host:

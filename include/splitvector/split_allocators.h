@@ -43,7 +43,7 @@ static void cuda_error(cudaError_t err, const char* file, int line) {
 #define SPLIT_CHECK_ERR(err) (split::hip_error(err, __FILE__, __LINE__))
 static void hip_error(hipError_t err, const char* file, int line) {
    if (err != hipSuccess) {
-      printf("\n\n%s in %s at line %d\n", hipGetErrorString(err), file, line);
+      std::cerr<<"\n\n"<<hipGetErrorString(err)<<" in "<<file<<" at line "<<line<<"\n";
       abort();
    }
 }
@@ -110,8 +110,11 @@ public:
          SPLIT_CHECK_ERR(split_gpuFree(p));
       }
    }
-
-   static void deallocate(void* p, size_type) { SPLIT_CHECK_ERR(split_gpuFree(p)); }
+   static void deallocate(void* p, size_type n) {
+      if (n != 0 && p != 0) {
+         SPLIT_CHECK_ERR(split_gpuFree(p));
+      }
+   }
 
    size_type max_size() const throw() {
       size_type max = static_cast<size_type>(-1) / sizeof(value_type);

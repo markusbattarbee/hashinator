@@ -368,19 +368,19 @@ public:
       // Match other's size prior to copying
       resize(other.size(), true, stream);
       auto copySafe = [&]() -> void {
-         for (size_t i = 0; i < size(); i++) {
-            _data[i] = other._data[i];
-         }
-      };
+                         for (size_t i = 0; i < size(); i++) {
+                            _data[i] = other._data[i];
+                         }
+                      };
 
       if constexpr (std::is_trivially_copyable<T>::value) {
-         if (other._location == Residency::device) {
-            _location = Residency::device;
-            optimizeGPU(stream);
-            SPLIT_CHECK_ERR(split_gpuMemcpyAsync(_data, other._data, size() * sizeof(T), split_gpuMemcpyDeviceToDevice,stream));
-            return;
+            if (other._location == Residency::device) {
+               _location = Residency::device;
+               optimizeGPU(stream);
+               SPLIT_CHECK_ERR(split_gpuMemcpyAsync(_data, other._data, size() * sizeof(T), split_gpuMemcpyDeviceToDevice,stream));
+               return;
+            }
          }
-      }
       copySafe();
       _location = Residency::host;
       return;
@@ -743,7 +743,7 @@ public:
          this->_deallocate();
          throw std::bad_alloc();
       }
-      // Copy over
+      // Store addresses
       const size_t __size = *_size;
       const size_t __old_capacity = *_capacity;
       T* __new_data = _new_data;
@@ -752,6 +752,7 @@ public:
       // Size remains the same ofc
       _data = _new_data;
       *_capacity = requested_space;
+      // Perform copy on device
       if (__size>0) {
          int device;
          SPLIT_CHECK_ERR(split_gpuGetDevice(&device));
@@ -767,7 +768,6 @@ public:
 
       // Deallocate old space
       _deallocate_and_destroy(__old_capacity, __data);
-
       return;
    }
 

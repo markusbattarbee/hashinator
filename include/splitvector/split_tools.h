@@ -678,15 +678,15 @@ uint32_t copy_if_raw(T* input, T* output, size_t size, Rule rule,
    // Step 3 -- Compaction
    uint32_t* retval = (uint32_t*)mPool.allocate(sizeof(uint32_t));
    split::tools::split_compact_raw<T, Rule, BLOCKSIZE, WARP>
-       <<<nBlocks, BLOCKSIZE, 2 * (BLOCKSIZE / WARP) * sizeof(unsigned int), s>>>(
-           input, d_counts, d_offsets, output, rule, size, nBlocks, retval);
+      <<<nBlocks, BLOCKSIZE, 2 * (BLOCKSIZE / WARP) * sizeof(unsigned int), s>>>(
+         input, d_counts, d_offsets, output, rule, size, nBlocks, retval);
    SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
    uint32_t numel;
    SPLIT_CHECK_ERR(split_gpuMemcpyAsync(&numel, retval, sizeof(uint32_t), split_gpuMemcpyDeviceToHost, s));
    SPLIT_CHECK_ERR(split_gpuStreamSynchronize(s));
    return numel;
 }
-
+   
 /**
  * @brief Same as copy_keys_if but using raw memory
  */
@@ -879,7 +879,7 @@ void copy_if(split::SplitVector<T, split::split_unified_allocator<T>>& input,
 
 template <typename T, typename Rule, size_t BLOCKSIZE = 1024, size_t WARP = WARPLENGTH>
 size_t copy_if(T* input, T* output, size_t size, Rule rule, void* stack, size_t max_size,
-             split_gpuStream_t s = 0) {
+               split_gpuStream_t s = 0) {
 
    // Figure out Blocks to use
    size_t _s = std::ceil((float(size)) / (float)BLOCKSIZE);
@@ -892,6 +892,6 @@ size_t copy_if(T* input, T* output, size_t size, Rule rule, void* stack, size_t 
    auto len = copy_if_raw(input, output, size, rule, nBlocks, mPool, s);
    return len;
 }
-
+   
 } // namespace tools
 } // namespace split
