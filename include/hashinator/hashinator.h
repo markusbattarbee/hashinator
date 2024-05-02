@@ -510,7 +510,7 @@ public:
 #endif
 
    HASHINATOR_HOSTDEVICE
-   void print_pair(const hash_pair<KEY_TYPE, VAL_TYPE>& i) const {
+   void print_pair(const hash_pair<KEY_TYPE, VAL_TYPE>& i, bool only_full=false) const {
       size_t currentSizePower = _mapInfo->sizePower;
       const size_t hashIndex = HashFunction::_hash(i.first, currentSizePower);
       const int bitMask = (1 << (currentSizePower)) - 1;
@@ -518,9 +518,9 @@ public:
       const_iterator it = find(i.first);
       int64_t overflow = llabs(it.getIndex() - optimalIndex);
       if (i.first == TOMBSTONE) {
-         printf("[╀] ");
+         if (!only_full) printf("[╀] ");
       } else if (i.first == EMPTYBUCKET) {
-         printf("[▢] ");
+         if (!only_full) printf("[▢] ");
       } else {
          if (overflow > 0) {
             printf("[%d,%d,\033[1;31m%li\033[0m] ", i.first, i.second, overflow);
@@ -531,12 +531,12 @@ public:
    }
 
    HASHINATOR_HOSTDEVICE
-   void dump_buckets() const {
+   void dump_buckets(bool only_full=false) const {
       printf("Hashinator Stats \n");
       printf("Fill= %zu, LoadFactor=%f \n", _mapInfo->fill, load_factor());
       printf("Tombstones= %zu\n", _mapInfo->tombstoneCounter);
       for (int i = 0; i < buckets.size(); ++i) {
-         print_pair(buckets[i]);
+         print_pair(buckets[i],only_full);
       }
       printf("\n");
    }
