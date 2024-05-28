@@ -74,7 +74,7 @@ __global__ void reset_to_empty(hash_pair<KEY_TYPE, VAL_TYPE>* src, hash_pair<KEY
    const size_t wid = tid / VIRTUALWARP;
    const size_t w_tid = tid % VIRTUALWARP;
    const int sizePower = info->sizePower;
-   const size_t maxoverflow = info->currentMaxBucketOverflow;
+   //const size_t maxoverflow = info->currentMaxBucketOverflow;
 
    // Early quit if we have more warps than elements to insert
    if (wid >= len) {
@@ -149,7 +149,7 @@ __global__ void insert_kernel(hash_pair<KEY_TYPE, VAL_TYPE>* src, hash_pair<KEY_
    __shared__ uint32_t addMask[WARPSIZE];
    __shared__ uint64_t warpOverflow[WARPSIZE];
    const int sizePower = info->sizePower;
-   const size_t maxoverflow = info->currentMaxBucketOverflow;
+   //const size_t maxoverflow = info->currentMaxBucketOverflow;
    const int VIRTUALWARP = WARPSIZE / elementsPerWarp;
    const size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
    const size_t wid = tid / VIRTUALWARP;
@@ -309,7 +309,7 @@ __global__ void insert_kernel(KEY_TYPE* keys, VAL_TYPE* vals, hash_pair<KEY_TYPE
    __shared__ uint32_t addMask[WARPSIZE];
    __shared__ uint64_t warpOverflow[WARPSIZE];
    const int sizePower = info->sizePower;
-   const size_t maxoverflow = info->currentMaxBucketOverflow;
+   //const size_t maxoverflow = info->currentMaxBucketOverflow;
    const int VIRTUALWARP = WARPSIZE / elementsPerWarp;
    const size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
    const size_t wid = tid / VIRTUALWARP;
@@ -473,7 +473,7 @@ __global__ void insert_index_kernel(KEY_TYPE* keys, hash_pair<KEY_TYPE, VAL_TYPE
    __shared__ uint32_t addMask[WARPSIZE];
    __shared__ uint64_t warpOverflow[WARPSIZE];
    const int sizePower = info->sizePower;
-   const size_t maxoverflow = info->currentMaxBucketOverflow;
+   //const size_t maxoverflow = info->currentMaxBucketOverflow;
 
    const int VIRTUALWARP = WARPSIZE / elementsPerWarp;
    const size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
