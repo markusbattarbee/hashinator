@@ -221,7 +221,8 @@ void gpu_recover_warpWide(hashmap* hmap,hash_pair<key_type,val_type>* src,size_t
    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
    const size_t wid = index / Hashinator::defaults::WARPSIZE;
    const size_t w_tid = index % defaults::WARPSIZE;
-   key_type key = 0;
+   key_type key;
+   val_type val = 0;
    val_type retval = 0;
    if (wid < N ){
       key = src[wid].first;
