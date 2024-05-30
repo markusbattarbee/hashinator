@@ -221,13 +221,15 @@ void gpu_recover_warpWide(hashmap* hmap,hash_pair<key_type,val_type>* src,size_t
    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
    const size_t wid = index / Hashinator::defaults::WARPSIZE;
    const size_t w_tid = index % defaults::WARPSIZE;
+   key_type key = 0;
+   val_type retval = 0;
    if (wid < N ){
-      key_type key= src[wid].first;
-      val_type retval;;
-      val_type val= src[wid].second;
+      key = src[wid].first;
+      val = src[wid].second;
       hmap->warpFind(key,retval,w_tid);
-      assert(retval==val);
    }
+   __syncthreads();
+   assert(retval==val);
 }
 
 __global__
@@ -236,12 +238,13 @@ void gpu_recover_non_existant_key_warpWide(hashmap* hmap,hash_pair<key_type,val_
    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
    const size_t wid = index / Hashinator::defaults::WARPSIZE;
    const size_t w_tid = index % defaults::WARPSIZE;
+   val_type retval = 42;
+   key_type key = 42;
    if (wid < N ){
-      val_type retval=42;;
-      key_type key=42 ;
       hmap->warpFind(key,retval,w_tid);
-      assert(retval==42);
    }
+   __syncthreads();
+   assert(retval==42);
 }
 
 __global__
