@@ -74,11 +74,13 @@ private:
    //~Host members
 
    // Wrapper over available hash functions
+public:
    HASHINATOR_HOSTDEVICE
    uint32_t hash(KEY_TYPE in) const {
       static_assert(std::is_arithmetic<KEY_TYPE>::value);
       return HashFunction::_hash(in, _mapInfo->sizePower);
    }
+private:
 
    // Used by the constructors. Preallocates the device pointer and bookeepping info for later use on device.
    // This helps in reducing the number of calls to split_gpuMalloc
